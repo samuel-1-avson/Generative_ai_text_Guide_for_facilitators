@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles2.css') }}"> <!-- Link to the external CSS file -->
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Chatbot for Facilitator Guide</h1>
+
+        <!-- PDF Upload Section -->
+        <div class="mb-3">
+            <label for="pdf_upload" class="form-label">Upload Facilitator Guide PDF:</label>
+            <input class="form-control" type="file" id="pdf_upload" accept="application/pdf">
+        </div>
+
+        <!-- User Query Section -->
+        <div class="mb-3">
+            <textarea id="user_query" class="form-control" rows="3" placeholder="Ask a question about the facilitator guide..."></textarea>
+        </div>
+        <button id="ask_button" class="btn btn-primary">Ask</button>
+
+        <!-- Response Section -->
+        <div id="response" class="mt-4 border rounded p-3" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            // Function to send the query
+            function sendQuery() {
+                var user_query = $('#user_query').val();
+                if (user_query.trim() !== '') { // Check if the input is not empty
+                    $('#response').append('<p><strong>You:</strong> ' + user_query + '</p>'); // Append user query
+                    $.post('/ask', { query: user_query }, function(data){
+                        $('#response').append('<p><strong>Chatbot:</strong> ' + data.response + '</p>'); // Append chatbot response
+                        $('#response').scrollTop($('#response')[0].scrollHeight); // Scroll to the bottom of the response div
+                        $('#user_query').val(''); // Clear the input after sending
+                    });
+                }
+            }
+
+            // Send query on button click
+            $('#ask_button').click(sendQuery);
+
+            // Send query on Enter key press
+            $('#user_query').keypress(function(event) {
+                if (event.which === 13) { // Enter key
+                    event.preventDefault(); // Prevent the default action (new line)
+                    sendQuery(); // Call the sendQuery function
+                }
+            });
+
+            // Handle PDF Upload
+            $('#pdf_upload').on('change', function() {
+                var file = this.files[0];
+                if (file) {
+                    var formData = new FormData();
+                    formData.append('file', file);  // Changed 'pdf' to 'file' to match backend code
+
+                    // Upload the PDF to the server
+                    $.ajax({
+                        url: '/upload',  // Updated the URL to match the backend route
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function(response) {
+                            $('#response').append('<p><strong>Chatbot:</strong> PDF uploaded successfully!</p>');
+                        },
+                        error: function() {
+                            $('#response').append('<p><strong>Chatbot:</strong> Error uploading PDF. Please try again.</p>');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
